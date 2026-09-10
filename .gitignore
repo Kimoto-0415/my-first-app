@@ -1,0 +1,12 @@
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# Editor / tooling
+.vscode/
+.idea/
+*.swp
+
+# Local Claude Code state (keep launch.json, ignore machine-local settings)
+.claude/settings.local.json

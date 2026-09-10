@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>みんなの投稿</title>
+<style>
+  :root{
+    --bg1:#2b1055;
+    --bg2:#7597de;
+    --machine:#ff5b6e;
+    --machine-dark:#d93b53;
+    --glass:#eaf6ff;
+    --gold:#ffd447;
+    --normal:#8a8f98;
+    --rare:#4d7dff;
+    --ultra1:#ff3cac;
+    --ultra2:#784ba0;
+    --ultra3:#2b86c5;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    font-family:"Hiragino Sans","Yu Gothic","Meiryo",sans-serif;
+    background:radial-gradient(circle at 50% 0%, var(--bg2), var(--bg1) 70%);
+    overflow-x:hidden;
+    color:#222;
+  }
+  .app{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:24px 16px 60px;
+    position:relative;
+  }
+  h1{
+    color:#fff;
+    font-size:clamp(22px,5vw,32px);
+    letter-spacing:.05em;
+    margin:8px 0 4px;
+    text-shadow:0 2px 8px rgba(0,0,0,.4);
+  }
+  .subtitle{
+    color:#e4e0ff;
+    font-size:13px;
+    margin-bottom:20px;
+    opacity:.85;
+  }
+
+  /* ---- Gacha Machine ---- */
+  /* .app is a centered flex column, so keep the same centering inside the
+     wrapper for when the gacha is un-hidden again. */
+  #gachaSection{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  #gachaSection[hidden]{ display:none; }
+  .machine-wrap{
+    position:relative;
+    width:min(320px,80vw);
+    filter:drop-shadow(0 12px 20px rgba(0,0,0,.35));
+  }
+  .machine-top{
+    background:linear-gradient(180deg,#fff,var(--glass) 60%);
+    border:6px solid var(--machine-dark);
+    border-radius:50% 50% 20px 20px / 60% 60% 20px 20px;
+    height:170px;
+    position:relative;
+    overflow:hidden;
+  }
+  .dome-shine{
+    position:absolute;
+    top:14px;left:24px;
+    width:70px;height:36px;
+    background:rgba(255,255,255,.6);
+    border-radius:50%;
+    filter:blur(2px);
+    transform:rotate(-20deg);
+  }
+  .capsules-bg{
+    position:absolute;inset:0;
+    display:flex;flex-wrap:wrap;
+    align-content:flex-end;
+    justify-content:center;
+    gap:4px;
+    padding:10px;
+  }
+  .capsules-bg span{
+    width:22px;height:22px;
+    border-radius:50%;
+    display:inline-block;
+    box-shadow:inset -3px -3px 0 rgba(0,0,0,.15), inset 2px 2px 0 rgba(255,255,255,.5);
+  }
+  .machine-body{
+    background:linear-gradient(180deg,var(--machine),var(--machine-dark));
+    border:6px solid var(--machine-dark);
+    border-top:none;
+    border-radius:0 0 18px 18px;
+    padding:16px 16px 20px;
+    position:relative;
+  }
+  .machine-window{
+    background:var(--machine-dark);
+    border-radius:10px;
+    height:14px;
+    margin:0 auto 14px;
+    width:70%;
+    box-shadow:inset 0 3px 6px rgba(0,0,0,.4);
+  }
+  .knob-row{
+    display:flex;
+    justify-content:center;
+    margin-bottom:12px;
+  }
+  .knob{
+    width:46px;height:46px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,#cfd6e0 60%,#9aa4b2);
+    border:3px solid #7a8494;
+    box-shadow:0 3px 4px rgba(0,0,0,.3);
+  }
+  .chute{
+    background:var(--machine-dark);
+    border-radius:0 0 10px 10px;
+    height:34px;
+    width:90px;
+    margin:0 auto;
+    position:relative;
+    box-shadow:inset 0 4px 6px rgba(0,0,0,.4);
+  }
+  .chute::before{
+    content:"";
+    position:absolute;
+    left:50%;top:100%;
+    transform:translateX(-50%);
+    width:0;height:0;
+    border-left:45px solid transparent;
+    border-right:45px solid transparent;
+    border-top:12px solid var(--machine-dark);
+  }
+
+  /* Lever */
+  .lever-area{
+    position:absolute;
+    right:-40px;
+    top:60px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .lever-base{
+    width:26px;height:26px;
+    background:#5c6470;
+    border-radius:50%;
+    box-shadow:0 2px 4px rgba(0,0,0,.4);
+  }
+  .lever-arm{
+    width:14px;height:70px;
+    background:linear-gradient(90deg,#c9ccd1,#8b8f97);
+    border-radius:8px;
+    transform-origin:top center;
+    transition:transform .25s ease;
+    box-shadow:0 2px 4px rgba(0,0,0,.3);
+  }
+  .lever-knob{
+    width:34px;height:34px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#ffe36b,var(--gold) 60%,#c9982a);
+    border:3px solid #a97b1e;
+    margin-top:-6px;
+    box-shadow:0 3px 6px rgba(0,0,0,.35);
+  }
+  .lever-btn{
+    cursor:pointer;
+    background:none;border:none;
+    display:flex;flex-direction:column;align-items:center;
+    padding:0;
+  }
+  .lever-btn:active .lever-arm,
+  .lever-btn.pulling .lever-arm{
+    transform:rotate(50deg);
+  }
+  .lever-btn:disabled{cursor:not-allowed;opacity:.7;}
+  .lever-hint{
+    color:#fff;
+    font-size:11px;
+    margin-top:6px;
+    text-align:center;
+    text-shadow:0 1px 3px rgba(0,0,0,.5);
+    white-space:nowrap;
+  }
+
+  /* Falling / rotating capsule */
+  .capsule-fly{
+    position:absolute;
+    left:50%;
+    top:230px;
+    width:46px;height:46px;
+    margin-left:-23px;
+    border-radius:50%;
+    opacity:0;
+    pointer-events:none;
+    z-index:5;
+    box-shadow:inset -4px -4px 0 rgba(0,0,0,.15), inset 3px 3px 0 rgba(255,255,255,.55), 0 6px 10px rgba(0,0,0,.3);
+  }
+  .capsule-fly.drop{
+    animation: capsuleDrop 1.1s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  @keyframes capsuleDrop{
+    0%{ opacity:1; top:230px; transform:rotate(0deg) scale(1); }
+    70%{ opacity:1; top:340px; transform:rotate(720deg) scale(1); }
+    100%{ opacity:0; top:360px; transform:rotate(760deg) scale(.8); }
+  }
+
+  /* Result stage */
+  .stage{
+    margin-top:26px;
+    width:min(360px,88vw);
+    min-height:210px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+  }
+  .placeholder{
+    color:#d9d4ff;
+    font-size:13px;
+    opacity:.7;
+    text-align:center;
+  }
+
+  .card{
+    width:100%;
+    background:#fff;
+    border-radius:18px;
+    padding:22px 20px 26px;
+    text-align:center;
+    position:relative;
+    box-shadow:0 14px 28px rgba(0,0,0,.35);
+    opacity:0;
+    transform:scale(.6) rotate(-4deg);
+  }
+  .card.show{
+    animation: cardPop .6s cubic-bezier(.2,1.4,.4,1) forwards;
+  }
+  @keyframes cardPop{
+    0%{ opacity:0; transform:scale(.4) rotate(-8deg); }
+    60%{ opacity:1; transform:scale(1.06) rotate(2deg); }
+    100%{ opacity:1; transform:scale(1) rotate(0deg); }
+  }
+
+  .rarity-badge{
+    display:inline-block;
+    font-weight:bold;
+    font-size:13px;
+    padding:5px 18px;
+    border-radius:999px;
+    color:#fff;
+    letter-spacing:.1em;
+    margin-bottom:14px;
+    box-shadow:0 3px 8px rgba(0,0,0,.25);
+  }
+  .card.normal .rarity-badge{ background:var(--normal); }
+  .card.rare .rarity-badge{ background:linear-gradient(90deg,#4d7dff,#7aa0ff); }
+  .card.ultra .rarity-badge{
+    background:linear-gradient(90deg,var(--ultra1),var(--ultra2),var(--ultra3));
+    background-size:200% auto;
+    animation:hue 2s linear infinite;
+  }
+  @keyframes hue{
+    0%{background-position:0% 50%;}
+    100%{background-position:200% 50%;}
+  }
+
+  .card.normal{ border:2px solid #d9dce2; }
+  .card.rare{ border:2px solid #b9c9ff; box-shadow:0 14px 28px rgba(77,125,255,.35); }
+  .card.ultra{
+    border:2px solid var(--gold);
+    box-shadow:0 0 0 3px rgba(255,212,71,.35), 0 14px 30px rgba(255,60,172,.4);
+  }
+
+  .quote-icon{ font-size:26px; opacity:.35; margin-bottom:6px; }
+  .quote-text{
+    font-size:17px;
+    font-weight:600;
+    line-height:1.6;
+    color:#222;
+    margin:0 0 14px;
+  }
+  .quote-author{
+    font-size:12px;
+    color:#888;
+  }
+
+  .again-btn{
+    margin-top:18px;
+    border:none;
+    background:#fff;
+    color:var(--machine-dark);
+    font-weight:bold;
+    padding:10px 22px;
+    border-radius:999px;
+    cursor:pointer;
+    box-shadow:0 4px 10px rgba(0,0,0,.15);
+    font-size:13px;
+  }
+  .again-btn:hover{ filter:brightness(0.97); }
+
+  .count-row{
+    color:#e4e0ff;
+    font-size:12px;
+    margin-top:18px;
+    display:flex;
+    gap:14px;
+    opacity:.85;
+  }
+  .count-row b{ color:#fff; }
+
+  /* Confetti */
+  #confetti-canvas{
+    position:fixed;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+    z-index:50;
+  }
+
+  .flash{
+    position:fixed;
+    inset:0;
+    background:radial-gradient(circle,rgba(255,255,255,.9),rgba(255,255,255,0) 60%);
+    pointer-events:none;
+    opacity:0;
+    z-index:40;
+  }
+  .flash.on{
+    animation:flashPulse .5s ease-out;
+  }
+  @keyframes flashPulse{
+    0%{opacity:0;}
+    30%{opacity:1;}
+    100%{opacity:0;}
+  }
+
+  @media (max-width:400px){
+    .lever-area{ right:-24px; }
+  }
+
+  /* ---- Posts board ---- */
+  .posts-section{
+    margin-top:8px;
+    width:min(420px,90vw);
+    color:#fff;
+  }
+  .posts-title{
+    color:#fff;
+    font-size:clamp(22px,5vw,32px);
+    letter-spacing:.05em;
+    text-align:center;
+    margin:8px 0 20px;
+    text-shadow:0 2px 8px rgba(0,0,0,.4);
+  }
+  .post-form{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    background:rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:14px;
+    margin-bottom:18px;
+  }
+  .post-form input,
+  .post-form textarea{
+    font-family:inherit;
+    font-size:13px;
+    padding:8px 10px;
+    border-radius:8px;
+    border:none;
+    resize:vertical;
+  }
+  .post-form textarea{ min-height:60px; }
+  .post-form button{
+    border:none;
+    background:var(--gold);
+    color:#3a2a00;
+    font-weight:bold;
+    padding:9px;
+    border-radius:999px;
+    cursor:pointer;
+    font-size:13px;
+  }
+  .post-form button:disabled{ opacity:.6; cursor:not-allowed; }
+  .posts-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .post-item{
+    background:#fff;
+    color:#222;
+    border-radius:12px;
+    padding:12px 14px;
+    box-shadow:0 6px 14px rgba(0,0,0,.25);
+  }
+  .post-item .post-name{
+    font-weight:bold;
+    font-size:13px;
+    margin-bottom:4px;
+  }
+  .post-item .post-body{
+    font-size:13px;
+    line-height:1.5;
+    white-space:pre-wrap;
+    word-break:break-word;
+  }
+  .post-item .post-time{
+    font-size:11px;
+    color:#999;
+    margin-top:6px;
+  }
+  .posts-empty, .posts-error{
+    color:#e4e0ff;
+    font-size:12px;
+    text-align:center;
+    opacity:.8;
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- ガチャは非表示中（表示に戻すには hidden 属性を外す） -->
+  <div id="gachaSection" hidden>
+  <h1>🎰 社長ガチャ</h1>
+  <div class="subtitle">レバーを引いて、社長の名言をゲットしよう</div>
+
+  <div class="machine-wrap">
+    <div class="machine-top" id="machineTop">
+      <div class="dome-shine"></div>
+      <div class="capsules-bg" id="capsulesBg"></div>
+    </div>
+    <div class="machine-body">
+      <div class="machine-window"></div>
+      <div class="knob-row"><div class="knob"></div></div>
+      <div class="chute"></div>
+    </div>
+
+    <div class="lever-area">
+      <button class="lever-btn" id="leverBtn" aria-label="レバーを引く">
+        <div class="lever-base"></div>
+        <div class="lever-arm" id="leverArm"></div>
+        <div class="lever-knob"></div>
+      </button>
+      <div class="lever-hint">引く！</div>
+    </div>
+
+    <div class="capsule-fly" id="capsuleFly"></div>
+  </div>
+
+  <div class="stage" id="stage">
+    <div class="placeholder" id="placeholder">レバーを引くと、カプセルが出てきます</div>
+  </div>
+
+  <div class="count-row" id="countRow">
+    <span>ノーマル: <b id="cNormal">0</b></span>
+    <span>レア: <b id="cRare">0</b></span>
+    <span>激レア: <b id="cUltra">0</b></span>
+  </div>
+  </div><!-- /#gachaSection -->
+
+  <div class="posts-section" id="postsSection">
+    <h1 class="posts-title">📝 みんなの投稿</h1>
+    <form class="post-form" id="postForm">
+      <input type="text" id="postName" placeholder="お名前" maxlength="50" required>
+      <textarea id="postBody" placeholder="ひとこと書いてね" maxlength="500" required></textarea>
+      <button type="submit" id="postSubmit">投稿する</button>
+    </form>
+    <div class="posts-list" id="postsList">
+      <div class="posts-empty">読み込み中…</div>
+    </div>
+  </div>
+</div>
+
+<div class="flash" id="flash"></div>
+<canvas id="confetti-canvas"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  const QUOTES = [
+    // ノーマル
+    { rarity:"normal", text:"迷ったら、やる方を選べ。", author:"創業者・田中" },
+    { rarity:"normal", text:"失敗は経験、経験は財産だ。", author:"会長・佐藤" },
+    { rarity:"normal", text:"報連相、これに尽きる。", author:"専務・鈴木" },
+    { rarity:"normal", text:"お客様の笑顔が、我が社の利益だ。", author:"社長・高橋" },
+    { rarity:"normal", text:"朝の挨拶が、一日の売上を決める。", author:"部長・伊藤" },
+    { rarity:"normal", text:"チームワークとは、他人の仕事を手伝う勇気だ。", author:"社長・渡辺" },
+    { rarity:"normal", text:"完璧な計画より、60点の実行。", author:"CEO・山本" },
+    { rarity:"normal", text:"数字は嘘をつかないが、言い訳はする。", author:"会長・中村" },
+    { rarity:"normal", text:"休むのも仕事のうちだ。ただし全力で。", author:"社長・小林" },
+    { rarity:"normal", text:"議事録を制する者が、会議を制す。", author:"専務・加藤" },
+    { rarity:"normal", text:"電話は3コール以内に取れ。", author:"社長・吉田" },
+    { rarity:"normal", text:"整理整頓は、仕事の速さに直結する。", author:"工場長・山田" },
+    { rarity:"normal", text:"やらない後悔より、やる後悔。", author:"社長・佐々木" },
+    { rarity:"normal", text:"アイデアは会議室より、現場に落ちている。", author:"専務・松本" },
+    { rarity:"normal", text:"メールの返信は早いほど信頼される。", author:"社長・井上" },
+    { rarity:"normal", text:"小さな約束を守れる人が、大きな仕事を任される。", author:"会長・木村" }
+  ];
+
+  // レア
+  QUOTES.push(
+    { rarity:"rare", text:"景気が悪い時こそ、种をまく時だ。", author:"創業社長・林" },
+    { rarity:"rare", text:"ピンチの裏には、必ずチャンスが張り付いている。", author:"CEO・清水" },
+    { rarity:"rare", text:"競合を見るな、お客様を見ろ。", author:"社長・斎藤" },
+    { rarity:"rare", text:"社員が辞めるのは、給料より未来が見えないからだ。", author:"会長・岡田" },
+    { rarity:"rare", text:"経営とは、決断し続ける孤独な仕事である。", author:"社長・後藤" },
+    { rarity:"rare", text:"利益は結果であり、目的にしてはいけない。", author:"創業者・長谷川" },
+    { rarity:"rare", text:"変化を恐れる会社に、明日は来ない。", author:"社長・村上" },
+    { rarity:"rare", text:"信頼を積むのは10年、崩すのは一瞬だ。", author:"会長・近藤" }
+  );
+
+  // 激レア
+  QUOTES.push(
+    { rarity:"ultra", text:"我が社の最大の資産は、ボーナスではなく、社員の情熱である。（給料は上げます）", author:"伝説の創業社長" },
+    { rarity:"ultra", text:"今日、会社を辞めても後悔しない人生を、今日から作れ。", author:"カリスマ会長" },
+    { rarity:"ultra", text:"世界は、諦めなかった一人の社長によって、静かに変わってきた。", author:"レジェンドCEO" },
+    { rarity:"ultra", text:"金メダルより、社員全員が笑って帰れる金曜日をくれ。", author:"伝説の会長" }
+  );
+
+  const WEIGHTS = { normal: 70, rare: 25, ultra: 5 };
+  const RARITY_LABEL = { normal:"ノーマル", rare:"レア", ultra:"激レア" };
+  const CAPSULE_COLORS = ["#ff8aa5","#ffd166","#8ac6ff","#a6e3a1","#c6a6ff","#ffb997"];
+
+  let counts = { normal:0, rare:0, ultra:0 };
+  let spinning = false;
+
+  const leverBtn = document.getElementById("leverBtn");
+  const leverArm = document.getElementById("leverArm");
+  const capsuleFly = document.getElementById("capsuleFly");
+  const stage = document.getElementById("stage");
+  const placeholder = document.getElementById("placeholder");
+  const flash = document.getElementById("flash");
+  const capsulesBg = document.getElementById("capsulesBg");
+
+  // fill machine top with decorative capsules
+  for(let i=0;i<26;i++){
+    const s = document.createElement("span");
+    s.style.background = CAPSULE_COLORS[i % CAPSULE_COLORS.length];
+    capsulesBg.appendChild(s);
+  }
+
+  function pickRarity(){
+    const total = WEIGHTS.normal + WEIGHTS.rare + WEIGHTS.ultra;
+    let r = Math.random() * total;
+    if (r < WEIGHTS.ultra) return "ultra";
+    r -= WEIGHTS.ultra;
+    if (r < WEIGHTS.rare) return "rare";
+    return "normal";
+  }
+
+  function pickQuote(rarity){
+    const pool = QUOTES.filter(q => q.rarity === rarity);
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function updateCounts(){
+    document.getElementById("cNormal").textContent = counts.normal;
+    document.getElementById("cRare").textContent = counts.rare;
+    document.getElementById("cUltra").textContent = counts.ultra;
+  }
+
+  function renderCard(rarity, quote){
+    stage.innerHTML = "";
+    const card = document.createElement("div");
+    card.className = "card " + rarity;
+    card.innerHTML = `
+      <div class="rarity-badge">${RARITY_LABEL[rarity]}</div>
+      <div class="quote-icon">“ ”</div>
+      <p class="quote-text">${quote.text}</p>
+      <div class="quote-author">― ${quote.author}</div>
+      <button class="again-btn" id="againBtn">もう一回引く</button>
+    `;
+    stage.appendChild(card);
+    requestAnimationFrame(()=>{ card.classList.add("show"); });
+
+    document.getElementById("againBtn").addEventListener("click", pull);
+  }
+
+  function pull(){
+    if (spinning) return;
+    spinning = true;
+    leverBtn.disabled = true;
+    leverBtn.classList.add("pulling");
+
+    // capsule flies out
+    const color = CAPSULE_COLORS[Math.floor(Math.random()*CAPSULE_COLORS.length)];
+    capsuleFly.style.background = color;
+    capsuleFly.classList.remove("drop");
+    void capsuleFly.offsetWidth; // reflow to restart animation
+    capsuleFly.classList.add("drop");
+
+    stage.innerHTML = "";
+    const spinner = document.createElement("div");
+    spinner.className = "placeholder";
+    spinner.textContent = "カプセルが回転中…";
+    stage.appendChild(spinner);
+
+    setTimeout(()=>{
+      leverBtn.classList.remove("pulling");
+    }, 300);
+
+    setTimeout(()=>{
+      const rarity = pickRarity();
+      const quote = pickQuote(rarity);
+      counts[rarity]++;
+      updateCounts();
+      renderCard(rarity, quote);
+
+      if (rarity === "ultra"){
+        flash.classList.remove("on");
+        void flash.offsetWidth;
+        flash.classList.add("on");
+        launchConfetti();
+      }
+
+      leverBtn.disabled = false;
+      spinning = false;
+    }, 1150);
+  }
+
+  leverBtn.addEventListener("click", pull);
+
+  /* ---------- Confetti ---------- */
+  const canvas = document.getElementById("confetti-canvas");
+  const ctx = canvas.getContext("2d");
+  let confettiPieces = [];
+  let confettiAnimId = null;
+
+  function resizeCanvas(){
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  window.addEventListener("resize", resizeCanvas);
+  resizeCanvas();
+
+  const CONFETTI_COLORS = ["#ff3cac","#784ba0","#2b86c5","#ffd447","#ff8aa5","#8ac6ff","#a6e3a1"];
+
+  // Velocities/lifetimes are per-second so the animation plays at the same
+  // real-world speed regardless of the display's refresh rate.
+  let lastTick = null;
+
+  function launchConfetti(){
+    const count = 160;
+    for(let i=0;i<count;i++){
+      confettiPieces.push({
+        x: Math.random()*canvas.width,
+        y: -20 - Math.random()*canvas.height*0.5,
+        w: 6 + Math.random()*6,
+        h: 8 + Math.random()*8,
+        color: CONFETTI_COLORS[Math.floor(Math.random()*CONFETTI_COLORS.length)],
+        vy: 120 + Math.random()*180,
+        vx: -90 + Math.random()*180,
+        rot: Math.random()*360,
+        vrot: -480 + Math.random()*960,
+        life: 0,
+        maxLife: 4.3 + Math.random()*1.3
+      });
+    }
+    if (!confettiAnimId){
+      lastTick = null;
+      confettiAnimId = requestAnimationFrame(tickConfetti);
+    }
+  }
+
+  function tickConfetti(timestamp){
+    if (lastTick === null) lastTick = timestamp;
+    const dt = Math.min(0.05, (timestamp - lastTick) / 1000);
+    lastTick = timestamp;
+
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    confettiPieces.forEach(p=>{
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 120 * dt;
+      p.rot += p.vrot * dt;
+      p.life += dt;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot * Math.PI/180);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = Math.max(0, 1 - p.life/p.maxLife);
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+      ctx.restore();
+    });
+    confettiPieces = confettiPieces.filter(p => p.life < p.maxLife && p.y < canvas.height + 40);
+
+    if (confettiPieces.length > 0){
+      confettiAnimId = requestAnimationFrame(tickConfetti);
+    } else {
+      confettiAnimId = null;
+      lastTick = null;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+    }
+  }
+})();
+</script>
+
+<script>
+(function(){
+  const SUPABASE_URL = "https://fwgtolqayfodyjdirocz.supabase.co";
+  const SUPABASE_KEY = "sb_publishable_siAAeElPKjB2NUCpO7Lgxw_7it5jgsl";
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const form = document.getElementById("postForm");
+  const nameInput = document.getElementById("postName");
+  const bodyInput = document.getElementById("postBody");
+  const submitBtn = document.getElementById("postSubmit");
+  const list = document.getElementById("postsList");
+
+  function formatTime(iso){
+    const d = new Date(iso);
+    return d.toLocaleString("ja-JP", { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" });
+  }
+
+  function renderPosts(posts){
+    list.innerHTML = "";
+    if (!posts || posts.length === 0){
+      const empty = document.createElement("div");
+      empty.className = "posts-empty";
+      empty.textContent = "まだ投稿がありません";
+      list.appendChild(empty);
+      return;
+    }
+    posts.forEach(post=>{
+      const item = document.createElement("div");
+      item.className = "post-item";
+
+      const name = document.createElement("div");
+      name.className = "post-name";
+      name.textContent = post.name;
+
+      const body = document.createElement("div");
+      body.className = "post-body";
+      body.textContent = post.body;
+
+      const time = document.createElement("div");
+      time.className = "post-time";
+      time.textContent = post.created_at ? formatTime(post.created_at) : "";
+
+      item.appendChild(name);
+      item.appendChild(body);
+      item.appendChild(time);
+      list.appendChild(item);
+    });
+  }
+
+  async function loadPosts(){
+    const { data, error } = await supabase
+      .from("posts")
+      .select("*")
+      .order("created_at", { ascending:false });
+
+    if (error){
+      list.innerHTML = "";
+      const err = document.createElement("div");
+      err.className = "posts-error";
+      err.textContent = "投稿の読み込みに失敗しました";
+      list.appendChild(err);
+      console.error(error);
+      return;
+    }
+    renderPosts(data);
+  }
+
+  form.addEventListener("submit", async (e)=>{
+    e.preventDefault();
+    const name = nameInput.value.trim();
+    const body = bodyInput.value.trim();
+    if (!name || !body) return;
+
+    submitBtn.disabled = true;
+    const { error } = await supabase.from("posts").insert({ name, body });
+    submitBtn.disabled = false;
+
+    if (error){
+      alert("投稿に失敗しました");
+      console.error(error);
+      return;
+    }
+    nameInput.value = "";
+    bodyInput.value = "";
+    loadPosts();
+  });
+
+  loadPosts();
+})();
+</script>
+</body>
+</html>
